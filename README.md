@@ -64,6 +64,3 @@ If you wish to use a non-OpenAI model, update the `gpt_call` function in `challe
 ## Troubleshooting
 - If you see an error about the API key, ensure it is set in your environment or passed as an argument.
 - For large datasets, analysis may take several minutes.
-
-## License
-MIT 
