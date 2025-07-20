@@ -109,4 +109,7 @@ The system performs 6 main tasks:
 ## Troubleshooting
 - If you see an error about the API key, ensure it is set in your environment or .env file.
 - For large datasets, analysis may take several minutes.
+<<<<<<< HEAD
 - The web app requires JavaScript to be enabled in your browser.
+=======
+>>>>>>> d342456826060ac721d42825df3f8d5a11e3ba6e
