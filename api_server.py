@@ -15,6 +15,7 @@ import math
 # Import our analysis functions
 from challenge import (
     create_interactive_visualization_enhanced,
+    create_standalone_visualization,
     clean_data,
     separate_videos_and_comments,
     generate_dynamic_spec,
@@ -256,8 +257,11 @@ def analyze_dataset_with_progress(file_path: str, analysis_id: str, use_gpt_sear
         # Final steps
         tracker.update("Finalizing", "Creating visualization", 95, "🎨 Analysis complete! Creating visualization...")
         
-        # Create visualization
+        # Create visualization with embedded data for standalone use
         html_content = create_interactive_visualization_enhanced(results, task_results)
+        
+        # Create a standalone version that embeds the data directly
+        standalone_html = create_standalone_visualization(results, task_results)
         
         # Save results
         run_id = f"run-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
@@ -273,7 +277,15 @@ def analyze_dataset_with_progress(file_path: str, analysis_id: str, use_gpt_sear
         with open(f"{output_dir}/task_results.json", "w") as f:
             json.dump(cleaned_task_results, f, indent=2)
         
-        tracker.update("Completed", "Done", 100, f"✅ Results saved to {output_dir}/")
+        # Save the interactive HTML visualization (server version)
+        with open(f"{output_dir}/interactive_visualization.html", "w", encoding="utf-8") as f:
+            f.write(html_content)
+        
+        # Save the standalone HTML visualization (with embedded data)
+        with open(f"{output_dir}/standalone_visualization.html", "w", encoding="utf-8") as f:
+            f.write(standalone_html)
+        
+        tracker.update("Completed", "Done", 100, f"✅ Results and visualization saved to {output_dir}/")
         
         # Set final results
         final_results = {

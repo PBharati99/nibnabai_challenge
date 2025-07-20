@@ -1,0 +1,1261 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Comment Analysis - Interactive</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .upload-section {
+            text-align: center;
+            padding: 40px;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .file-input {
+            display: none;
+        }
+        .file-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .file-label:hover {
+            background-color: #0056b3;
+        }
+        .options-section {
+            margin: 30px 0;
+            text-align: left;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .option-group {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .analyze-button {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .analyze-button:hover {
+            transform: translateY(-2px);
+        }
+        .analyze-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .live-progress {
+            background-color: #e8f5e8;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .progress-log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            margin-top: 15px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+        .log-entry.success {
+            color: #28a745;
+        }
+        .log-entry.warning {
+            color: #ffc107;
+        }
+        .log-entry.error {
+            color: #dc3545;
+        }
+        .live-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #6c757d;
+            animation: pulse 2s infinite;
+        }
+        .status-indicator.running {
+            background-color: #28a745;
+        }
+        .status-indicator.completed {
+            background-color: #007bff;
+        }
+        .status-indicator.error {
+            background-color: #dc3545;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            display: none;
+        }
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            display: none;
+        }
+        .task-flow-section {
+            display: none;
+        }
+        .task-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .task-step {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            margin: 0 5px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 120px;
+        }
+        .task-step:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px);
+        }
+        .task-step.active {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+        .task-panel {
+            display: none;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .task-panel.active {
+            display: block;
+        }
+        .video-item, .video-spec-item, .static-spec-item, .search-results-item, .generalization-item {
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .summary-card {
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px;
+            text-align: center;
+            display: inline-block;
+            min-width: 200px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .status-badge.completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-badge.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .summary-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .search-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .stat-item {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 5px;
+            flex: 1;
+        }
+        .stat-label {
+            font-weight: bold;
+            color: #6c757d;
+        }
+        .stat-value {
+            font-size: 1.2em;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .generalization-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .metric-card {
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        .sentiment-score {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .topics-list, .questions-list {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+        }
+        .topics-list li, .questions-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #f1f1f1;
+        }
+        .topics-list li:last-child, .questions-list li:last-child {
+            border-bottom: none;
+        }
+        
+        /* Analysis Summary Styles */
+        .analysis-summary {
+            padding: 20px;
+        }
+        .summary-overview {
+            margin-bottom: 30px;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .summary-stat {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .stat-label {
+            font-size: 1.1em;
+            color: #6c757d;
+        }
+        .key-findings {
+            margin-bottom: 30px;
+        }
+        .findings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .finding-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .finding-card h5 {
+            color: #007bff;
+            margin-bottom: 15px;
+        }
+        .analysis-completion {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .analysis-completion h4 {
+            margin-bottom: 15px;
+        }
+        .analysis-completion ul {
+            text-align: left;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .analysis-completion li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>YouTube Comment Analysis</h1>
+            <p>Real-time interactive AI-powered insights from video comments</p>
+        </div>
+        
+        <div class="content">
+            <div class="upload-section" id="uploadSection">
+                <h2>Upload Your Dataset</h2>
+                <p>Select an Excel (.xlsx) or CSV file containing YouTube comments data</p>
+                
+                <input type="file" id="datasetFile" class="file-input" accept=".xlsx,.csv">
+                <label for="datasetFile" class="file-label">Choose File</label>
+                
+                <button class="analyze-button" onclick="startAnalysis()" id="analyzeBtn">Start Analysis</button>
+            </div>
+            
+            <div class="live-progress" id="liveProgress">
+                <h3>🔄 Live Analysis Progress</h3>
+                <div class="live-status">
+                    <div class="status-indicator" id="statusIndicator"></div>
+                    <span id="statusText">Initializing...</span>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p id="progressText">Starting analysis...</p>
+                
+                <div class="progress-log" id="progressLog">
+                    <div class="log-entry">Waiting for analysis to start...</div>
+                </div>
+            </div>
+            
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+            
+            <div class="task-flow-section" id="taskFlowSection">
+                <div class="task-steps">
+                    <div class="task-step active" onclick="showTask(1)" id="task1-step">
+                        <h4>Task 1</h4>
+                        <p>Data Cleaning</p>
+                    </div>
+                    <div class="task-step" onclick="showTask(2)" id="task2-step">
+                        <h4>Task 2</h4>
+                        <p>Dynamic Specs</p>
+                    </div>
+                    <div class="task-step" onclick="showTask(3)" id="task3-step">
+                        <h4>Task 3</h4>
+                        <p>Static Specs</p>
+                    </div>
+                    <div class="task-step" onclick="showTask(4)" id="task4-step">
+                        <h4>Task 4</h4>
+                        <p>Data Summary</p>
+                    </div>
+                    <div class="task-step" onclick="showTask(5)" id="task5-step">
+                        <h4>Task 5</h4>
+                        <p>Search Results</p>
+                    </div>
+                    <div class="task-step" onclick="showTask(6)" id="task6-step">
+                        <h4>Task 6</h4>
+                        <p>Generalizations</p>
+                    </div>
+                </div>
+                
+                <div class="task-panel active" id="task1-content">
+                    <h3>Task 1: Data Cleaning & Separation</h3>
+                    <div class="task-summary">
+                        <div class="summary-card">
+                            <h4>Videos Found</h4>
+                            <div class="summary-number">5</div>
+                        </div>
+                        <div class="summary-card">
+                            <h4>Comments Found</h4>
+                            <div class="summary-number">6348</div>
+                        </div>
+                    </div>
+                    <div class="task-details">
+                        <h4>Sample Videos:</h4>
+                        
+                <div class="video-item">
+                    <div class="video-header">
+                        <h5>Video ID: FqIMu4C87SM</h5>
+                        <p><strong>Author:</strong> Unknown Author</p>
+                        <p><strong>URL:</strong> <a href="https://www.youtube.com/watch?v=FqIMu4C87SM" target="_blank">https://www.youtube.com/watch?v=FqIMu4C87SM</a></p>
+                    </div>
+                    <div class="video-content">
+                        <p><strong>Content:</strong> Check out Ridge! 
+
+Subscribe for more! 
+TikTok: 
+Instagram: 
+Twitter: 
+Threads: 
+
+I finally got my hands on the highly anticipated Framework 13 laptop and built it from the ground up. While the concep...</p>
+                    </div>
+                </div>
+                
+                <div class="video-item">
+                    <div class="video-header">
+                        <h5>Video ID: ubSE4me-sE8</h5>
+                        <p><strong>Author:</strong> Unknown Author</p>
+                        <p><strong>URL:</strong> <a href="https://www.youtube.com/watch?v=ubSE4me-sE8" target="_blank">https://www.youtube.com/watch?v=ubSE4me-sE8</a></p>
+                    </div>
+                    <div class="video-content">
+                        <p><strong>Content:</strong> XREAL Beam Pro+XREAL Air 2 Pro Bundle: 
+XREAL Beam Pro: 
+XREAL Air 2 Pro:   (Use discount code Sarah20 to get $20 off. Does not stack with Bundle discounts.)
+XREAL Air 2 Ultra：
+
+* discount code only a...</p>
+                    </div>
+                </div>
+                
+                <div class="video-item">
+                    <div class="video-header">
+                        <h5>Video ID: rdMyaxhWQ8k</h5>
+                        <p><strong>Author:</strong> Unknown Author</p>
+                        <p><strong>URL:</strong> <a href="https://www.youtube.com/watch?v=rdMyaxhWQ8k" target="_blank">https://www.youtube.com/watch?v=rdMyaxhWQ8k</a></p>
+                    </div>
+                    <div class="video-content">
+                        <p><strong>Content:</strong> Today we discuss the FNaF Movie 2 images and scripts!
+
+Become a Dawkbro!
+
+
+
+
+USE CODE DAWKO AT GFUEL CHECKOUT FOR A DISCOUNT! 
+Discord: 
+MERCH: 
+NINDAWKO - 
+
+ - toy bonnie edit
+
+Join this channel to g...</p>
+                    </div>
+                </div>
+                
+                <div class="video-item">
+                    <div class="video-header">
+                        <h5>Video ID: YKbDApzT1iw</h5>
+                        <p><strong>Author:</strong> Unknown Author</p>
+                        <p><strong>URL:</strong> <a href="https://www.youtube.com/watch?v=YKbDApzT1iw" target="_blank">https://www.youtube.com/watch?v=YKbDApzT1iw</a></p>
+                    </div>
+                    <div class="video-content">
+                        <p><strong>Content:</strong> Yesterday we had another update on Starliner's extended stay at the ISS, and depending on how things play out we could see the two crew members coming home before the end of the month.... or spending ...</p>
+                    </div>
+                </div>
+                
+                <div class="video-item">
+                    <div class="video-header">
+                        <h5>Video ID: 2yyCnKcSrUg</h5>
+                        <p><strong>Author:</strong> Unknown Author</p>
+                        <p><strong>URL:</strong> <a href="https://www.youtube.com/watch?v=2yyCnKcSrUg" target="_blank">https://www.youtube.com/watch?v=2yyCnKcSrUg</a></p>
+                    </div>
+                    <div class="video-content">
+                        <p><strong>Content:</strong> Go to  or scan the QR code and use code MOTHERTHEMOUNTAIN to get your free FÜM Base when you order your Journey Pack today.
+You can buy our book here!  
+ 
+
+Anastasia's Instagram: 
+Julia's Instagram: 
+...</p>
+                    </div>
+                </div>
+                
+                    </div>
+                </div>
+                
+                <div class="task-panel" id="task2-content">
+                    <h3>Task 2: Dynamic Search Specification Generation</h3>
+                    <p>AI-generated search criteria based on video content and author information.</p>
+                    
+                <div class="video-spec-item">
+                    <h4>Video: FqIMu4C87SM</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <p><strong>Generated Keywords:</strong> Framework 13, upgradeable, repairable, modularity, price tag, hardware, value proposition, cost considerations</p>
+                    <p><strong>Description:</strong> Author-specific search criteria for Unknown Author (Channel: FqIMu4C87SM)</p>
+                </div>
+                
+                <div class="video-spec-item">
+                    <h4>Video: ubSE4me-sE8</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <p><strong>Generated Keywords:</strong> AR technology, XREAL Beam Pro, XREAL Air 2 Pro, discount code, affordable AR glasses, product comparison, user reviews, partnership with XREAL</p>
+                    <p><strong>Description:</strong> Author-specific search criteria for Unknown Author (Channel: ubSE4me-sE8)</p>
+                </div>
+                
+                <div class="video-spec-item">
+                    <h4>Video: rdMyaxhWQ8k</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <p><strong>Generated Keywords:</strong> FNaF Movie, toy bonnie, Dawkbro, GFUEL discount, script leak, Five Nights at Freddy's, movie images, fan theories</p>
+                    <p><strong>Description:</strong> Author-specific search criteria for Unknown Author (Channel: rdMyaxhWQ8k)</p>
+                </div>
+                
+                <div class="video-spec-item">
+                    <h4>Video: YKbDApzT1iw</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <p><strong>Generated Keywords:</strong> Starliner, thruster failures, ISS, Boeing, Aerojet, NASA decision, crew members, space mission</p>
+                    <p><strong>Description:</strong> Author-specific search criteria for Unknown Author (Channel: YKbDApzT1iw)</p>
+                </div>
+                
+                <div class="video-spec-item">
+                    <h4>Video: 2yyCnKcSrUg</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <p><strong>Generated Keywords:</strong> regenerative farming, Bundjalung Country, mandarins, citrus polenta cake, sustainable living, traditional custodians, environmental films, rainforest</p>
+                    <p><strong>Description:</strong> Author-specific search criteria for Unknown Author (Channel: 2yyCnKcSrUg)</p>
+                </div>
+                
+                </div>
+                
+                <div class="task-panel" id="task3-content">
+                    <h3>Task 3: Static Search Specifications</h3>
+                    <p>Pre-defined search criteria for consistent analysis across all videos.</p>
+                    <div class='static-specs-list'>
+                <div class="static-spec-item">
+                    <h4>Positive Feedback</h4>
+                    <p><strong>Keywords:</strong> love, amazing, great, awesome, excellent, perfect, best, fantastic, good, nice, wonderful, outstanding, superb, brilliant, incredible</p>
+                    <p><strong>Description:</strong> Comments expressing positive sentiment and satisfaction</p>
+                </div>
+                
+                <div class="static-spec-item">
+                    <h4>Questions</h4>
+                    <p><strong>Keywords:</strong> ?, how, why, what, when, where, which, can you, does it, is it, are you, do you, would you, could you, explain, tell me, help</p>
+                    <p><strong>Description:</strong> Comments asking questions or seeking information</p>
+                </div>
+                </div>
+                </div>
+                
+                <div class="task-panel" id="task4-content">
+                    <h3>Task 4: Data Cleaning Summary</h3>
+                    
+        <div class="cleaning-summary">
+            <div class="summary-card">
+                <h4>Data Cleaning Status</h4>
+                <div class="status-badge completed">COMPLETED</div>
+            </div>
+            <div class="summary-card">
+                <h4>Cleaned Rows</h4>
+                <div class="summary-number">6353</div>
+            </div>
+            <div class="cleaning-details">
+                <h4>Cleaning Actions Performed:</h4>
+                <ul>
+                    <li>✅ Removed URLs from content</li>
+                    <li>✅ Removed empty content entries</li>
+                    <li>✅ Stripped whitespace</li>
+                    <li>✅ Handled missing author IDs</li>
+                </ul>
+            </div>
+        </div>
+        
+                </div>
+                
+                <div class="task-panel" id="task5-content">
+                    <h3>Task 5: Comment Search Results</h3>
+                    <p>Comments that match the generated search specifications.</p>
+                    
+                <div class="search-results-item">
+                    <h4>Video: FqIMu4C87SM</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <div class="search-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Dynamic Matches:</span>
+                            <span class="stat-value">60</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Static Matches:</span>
+                            <span class="stat-value">338</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="search-results-item">
+                    <h4>Video: ubSE4me-sE8</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <div class="search-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Dynamic Matches:</span>
+                            <span class="stat-value">6</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Static Matches:</span>
+                            <span class="stat-value">172</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="search-results-item">
+                    <h4>Video: rdMyaxhWQ8k</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <div class="search-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Dynamic Matches:</span>
+                            <span class="stat-value">101</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Static Matches:</span>
+                            <span class="stat-value">580</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="search-results-item">
+                    <h4>Video: YKbDApzT1iw</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <div class="search-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Dynamic Matches:</span>
+                            <span class="stat-value">1101</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Static Matches:</span>
+                            <span class="stat-value">827</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="search-results-item">
+                    <h4>Video: 2yyCnKcSrUg</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <div class="search-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Dynamic Matches:</span>
+                            <span class="stat-value">8</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Static Matches:</span>
+                            <span class="stat-value">105</span>
+                        </div>
+                    </div>
+                </div>
+                
+                </div>
+                
+                <div class="task-panel" id="task6-content">
+                    <h3>Task 6: Generalizations & Insights</h3>
+                    <p>AI-generated insights including sentiment analysis, topic extraction, and question identification.</p>
+                    
+                <div class="generalization-item">
+                    <h4>Video: FqIMu4C87SM</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <p><strong>Comments Analyzed:</strong> 578</p>
+                    
+                    <div class="generalization-metrics">
+                        <div class="metric-card">
+                            <h5>Sentiment Analysis</h5>
+                            <div class="sentiment-score" style="color: #ffc107">
+                                0.400
+                            </div>
+                            <p>Overall sentiment (0 = negative, 1 = positive)</p>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h5>Top 5 Topics</h5>
+                            <ul class="topics-list">
+                                <li>Framework laptop repairability</li><li>Framework laptop pricing</li><li>Comparison with other laptop brands</li><li>Linux support</li><li>Sustainability and recycling</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h5>Top 5 Questions</h5>
+                            <ul class="questions-list">
+                                <li>1,5 years ago I decided in favor of buying a Yoga 7. Now I have multiple cracks on the plastic bezel...</li><li>I came to this video thanks to a LTT video when people asked Linus to react to you (and he give you ...</li><li>My mom bought one kislux  and she loves it. It had been there for over 10 years when she went out wi...</li><li>Yeah, they cost more than others. But surely we should be trying to support companies who are trying...</li><li>He’s ABSOLUTELY RIGHT, so why have I paid my final payment for the even more expensive Intel Core Ul...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="generalization-item">
+                    <h4>Video: ubSE4me-sE8</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <p><strong>Comments Analyzed:</strong> 538</p>
+                    
+                    <div class="generalization-metrics">
+                        <div class="metric-card">
+                            <h5>Sentiment Analysis</h5>
+                            <div class="sentiment-score" style="color: #dc3545">
+                                0.300
+                            </div>
+                            <p>Overall sentiment (0 = negative, 1 = positive)</p>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h5>Top 5 Topics</h5>
+                            <ul class="topics-list">
+                                <li>virtual reality headsets</li><li>misinformation and dishonesty</li><li>giveaways</li><li>product pricing</li><li>advertising and promotion</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h5>Top 5 Questions</h5>
+                            <ul class="questions-list">
+                                <li>How is this content not banned yet? So much misinformation and dishonesty. Such an embarrassing port...</li><li>How to Buy it?????????</li><li>An Apple vision pro for $200.-? Let me guess, youre jewish.</li><li>Gorilla tag?</li><li>Why are you this bullshit video on chrome</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="generalization-item">
+                    <h4>Video: rdMyaxhWQ8k</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <p><strong>Comments Analyzed:</strong> 1393</p>
+                    
+                    <div class="generalization-metrics">
+                        <div class="metric-card">
+                            <h5>Sentiment Analysis</h5>
+                            <div class="sentiment-score" style="color: #ffc107">
+                                0.600
+                            </div>
+                            <p>Overall sentiment (0 = negative, 1 = positive)</p>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h5>Top 5 Topics</h5>
+                            <ul class="topics-list">
+                                <li>FNaF 2 movie and its connection to the game's universe</li><li>Design and appearance of animatronics, especially Toy Chica</li><li>Franchise continuity and future FNaF movies</li><li>Involvement of Jim Henson studios in animatronics</li><li>Excitement and anticipation for the movie release</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h5>Top 5 Questions</h5>
+                            <ul class="questions-list">
+                                <li>Are the old animatronics gonna be gone?!</li><li>I'm curious how they'll make Mangle move and how big she'd be since she's more complex than Foxy</li><li>A gator? Monty? Third movie security breach?</li><li>Will the fnaf 2 animatronics have the stoner eyes from the first movie?</li><li>I say all of them in some way, the government part would explain the tech for the toy animatronics.
+...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="generalization-item">
+                    <h4>Video: YKbDApzT1iw</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <p><strong>Comments Analyzed:</strong> 1596</p>
+                    
+                    <div class="generalization-metrics">
+                        <div class="metric-card">
+                            <h5>Sentiment Analysis</h5>
+                            <div class="sentiment-score" style="color: #dc3545">
+                                0.200
+                            </div>
+                            <p>Overall sentiment (0 = negative, 1 = positive)</p>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h5>Top 5 Topics</h5>
+                            <ul class="topics-list">
+                                <li>NASA and Boeing Starliner issues</li><li>SpaceX as an alternative</li><li>Astronaut safety concerns</li><li>Boeing's reputation and management</li><li>Costs and logistics of space missions</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h5>Top 5 Questions</h5>
+                            <ul class="questions-list">
+                                <li>Where will you go for vacation if your name was "Green"?</li><li>Here’s what NASA should do - drop Boeing and Bezo’s and use what actually works, SPACE X - had they ...</li><li>You can understand why they are putting an election before peoples lives because of fucking optics? ...</li><li>What if we send captain marvel to rescue them?</li><li>I just read a brief article saying that one of the reasons NASA does not want the two astronauts tha...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="generalization-item">
+                    <h4>Video: 2yyCnKcSrUg</h4>
+                    <p><strong>Author:</strong> Unknown Author</p>
+                    <p><strong>Comments Analyzed:</strong> 207</p>
+                    
+                    <div class="generalization-metrics">
+                        <div class="metric-card">
+                            <h5>Sentiment Analysis</h5>
+                            <div class="sentiment-score" style="color: #28a745">
+                                1.000
+                            </div>
+                            <p>Overall sentiment (0 = negative, 1 = positive)</p>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h5>Top 5 Topics</h5>
+                            <ul class="topics-list">
+                                <li>living in the countryside</li><li>farm life</li><li>video quality</li><li>international viewers</li><li>sponsorship and promotions</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h5>Top 5 Questions</h5>
+                            <ul class="questions-list">
+                                <li>Update: the fence worked! Thanks so much to FÜM for sponsoring this video! Go to  or scan the QR cod...</li><li>Your video quality is best what is used shooting mobile ya camera</li><li>How do you make use of so much harvest? Do you sell and barter or let nature have the excess?</li><li>That's what kind of the dea take a big breath and give them a big smile girls ❤❤❤l with views worlds...</li><li>Hello!
+I hope you will be fine and happy.I love nature life and i love your content ❤
+Can i upload y...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFile = null;
+        let currentAnalysisId = null;
+        let progressInterval = null;
+        
+        document.getElementById('datasetFile').addEventListener('change', function(e) {
+            currentFile = e.target.files[0];
+            if (currentFile) {
+                document.getElementById('successMessage').style.display = 'block';
+                document.getElementById('successMessage').textContent = `File selected: ${currentFile.name}`;
+            }
+        });
+        
+        async function startAnalysis() {
+            if (!currentFile) {
+                showError('Please select a file first');
+                return;
+            }
+            
+            // Use default optimized settings
+            const useGptSearch = true;  // Use GPT for better accuracy
+            const useAllComments = false;  // Use sampling for faster analysis
+            const useSampling = true;  // Enable sampling for performance
+            
+            // Show live progress
+            document.getElementById('liveProgress').style.display = 'block';
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+            
+            // Reset progress
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('progressText').textContent = 'Starting analysis...';
+            document.getElementById('progressLog').innerHTML = '<div class="log-entry">Initializing analysis...</div>';
+            
+            try {
+                // Create FormData for file upload
+                const formData = new FormData();
+                formData.append('file', currentFile);
+                formData.append('use_gpt_search', useGptSearch);
+                formData.append('use_all_comments', useAllComments);
+                formData.append('use_sampling', useSampling);
+                
+                // Start analysis
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to start analysis');
+                }
+                
+                const result = await response.json();
+                currentAnalysisId = result.analysis_id;
+                
+                // Start progress polling
+                startProgressPolling();
+                
+            } catch (error) {
+                showError('Error starting analysis: ' + error.message);
+                document.getElementById('liveProgress').style.display = 'none';
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        }
+        
+        function startProgressPolling() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+            
+            progressInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/progress/${currentAnalysisId}`);
+                    if (response.ok) {
+                        const progress = await response.json();
+                        updateProgress(progress);
+                        
+                        if (progress.status === 'completed') {
+                            clearInterval(progressInterval);
+                            showResults(progress.results);
+                        } else if (progress.status === 'error') {
+                            clearInterval(progressInterval);
+                            showError('Analysis failed: ' + progress.error);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching progress:', error);
+                }
+            }, 1000); // Poll every second
+        }
+        
+        function updateProgress(progress) {
+            // Update progress bar
+            document.getElementById('progressFill').style.width = progress.progress_percentage + '%';
+            document.getElementById('progressText').textContent = `${progress.current_task}: ${progress.current_step}`;
+            
+            // Update status
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            statusIndicator.className = 'status-indicator ' + progress.status;
+            
+            if (progress.status === 'starting') {
+                statusText.textContent = 'Starting...';
+            } else if (progress.status === 'completed') {
+                statusText.textContent = 'Completed!';
+            } else if (progress.status === 'error') {
+                statusText.textContent = 'Error occurred';
+            } else {
+                statusText.textContent = 'Running...';
+            }
+            
+            // Update log
+            const logContainer = document.getElementById('progressLog');
+            logContainer.innerHTML = '';
+            
+            progress.logs.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                
+                if (log.includes('✅')) {
+                    logEntry.classList.add('success');
+                } else if (log.includes('⚠️')) {
+                    logEntry.classList.add('warning');
+                } else if (log.includes('❌')) {
+                    logEntry.classList.add('error');
+                }
+                
+                logEntry.textContent = log;
+                logContainer.appendChild(logEntry);
+            });
+            
+            // Auto-scroll to bottom
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        function showResults(results) {
+            // Hide progress and upload sections
+            document.getElementById('liveProgress').style.display = 'none';
+            document.getElementById('uploadSection').style.display = 'none';
+            
+            // Show the task flow section
+            const taskFlowSection = document.getElementById('taskFlowSection');
+            taskFlowSection.style.display = 'block';
+            
+            // Update the task results with actual data
+            updateTaskResults(results.results, results.task_results);
+            
+            // Show Task 1 by default
+            showTask(1);
+        }
+        
+        function updateTaskResults(results, task_results) {
+            // Update Task 1 content
+            const task1Content = document.getElementById('task1-content');
+            if (task1Content && task_results.task1) {
+                const videosCount = task_results.task1.videos_count || 0;
+                const commentsCount = task_results.task1.comments_count || 0;
+                
+                task1Content.innerHTML = `
+                    <h3>Task 1: Data Cleaning & Separation</h3>
+                    <div class="task-summary">
+                        <div class="summary-card">
+                            <h4>Videos Found</h4>
+                            <div class="summary-number">${videosCount}</div>
+                        </div>
+                        <div class="summary-card">
+                            <h4>Comments Found</h4>
+                            <div class="summary-number">${commentsCount}</div>
+                        </div>
+                    </div>
+                    <div class="task-details">
+                        <h4>Analysis Summary:</h4>
+                        <p>✅ Successfully processed ${videosCount} videos and ${commentsCount} comments</p>
+                        <p>✅ Data cleaned and separated into videos and comments</p>
+                        <p>✅ Ready for analysis</p>
+                    </div>
+                `;
+            }
+            
+            // Update Task 2 content
+            const task2Content = document.getElementById('task2-content');
+            if (task2Content && task_results.task2) {
+                let dynamicSpecsHtml = '<h3>Task 2: Dynamic Search Specification Generation</h3>';
+                dynamicSpecsHtml += '<p>AI-generated search criteria based on video content and author information.</p>';
+                
+                for (const [videoId, spec] of Object.entries(task_results.task2)) {
+                    const keywords = spec.keywords ? spec.keywords.join(', ') : 'No keywords';
+                    const description = spec.description || 'No description';
+                    dynamicSpecsHtml += `
+                        <div class="video-spec-item">
+                            <h4>Video: ${videoId}</h4>
+                            <p><strong>Generated Keywords:</strong> ${keywords}</p>
+                            <p><strong>Description:</strong> ${description}</p>
+                        </div>
+                    `;
+                }
+                
+                task2Content.innerHTML = dynamicSpecsHtml;
+            }
+            
+            // Update Task 3 content
+            const task3Content = document.getElementById('task3-content');
+            if (task3Content && task_results.task3) {
+                let staticSpecsHtml = '<h3>Task 3: Static Search Specifications</h3>';
+                staticSpecsHtml += '<p>Pre-defined search criteria for consistent analysis across all videos.</p>';
+                
+                if (task_results.task3.static_specs) {
+                    staticSpecsHtml += '<div class="static-specs-list">';
+                    for (const spec of task_results.task3.static_specs) {
+                        const keywords = spec.keywords ? spec.keywords.join(', ') : 'No keywords';
+                        staticSpecsHtml += `
+                            <div class="static-spec-item">
+                                <h4>${spec.name}</h4>
+                                <p><strong>Keywords:</strong> ${keywords}</p>
+                                <p><strong>Description:</strong> ${spec.description || 'Universal search criteria'}</p>
+                            </div>
+                        `;
+                    }
+                    staticSpecsHtml += '</div>';
+                }
+                
+                task3Content.innerHTML = staticSpecsHtml;
+            }
+            
+            // Update Task 4 content
+            const task4Content = document.getElementById('task4-content');
+            if (task4Content && task_results.task4) {
+                const cleanedRows = task_results.task4.cleaned_rows || 0;
+                const status = task_results.task4.status || 'completed';
+                
+                task4Content.innerHTML = `
+                    <h3>Task 4: Data Cleaning Summary</h3>
+                    <div class="cleaning-summary">
+                        <div class="summary-card">
+                            <h4>Data Cleaning Status</h4>
+                            <div class="status-badge ${status}">${status.toUpperCase()}</div>
+                        </div>
+                        <div class="summary-card">
+                            <h4>Cleaned Rows</h4>
+                            <div class="summary-number">${cleanedRows}</div>
+                        </div>
+                        <div class="cleaning-details">
+                            <h4>Cleaning Actions Performed:</h4>
+                            <ul>
+                                <li>✅ Removed URLs from content</li>
+                                <li>✅ Removed empty content entries</li>
+                                <li>✅ Stripped whitespace</li>
+                                <li>✅ Handled missing author IDs</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Update Task 5 content
+            const task5Content = document.getElementById('task5-content');
+            if (task5Content && task_results.task5) {
+                let searchResultsHtml = '<h3>Task 5: Comment Search Results</h3>';
+                searchResultsHtml += '<p>Comments that match the generated search specifications.</p>';
+                
+                for (const [videoId, searchResults] of Object.entries(task_results.task5)) {
+                    const dynamicMatches = searchResults.dynamic ? searchResults.dynamic.length : 0;
+                    const staticMatches = searchResults.static ? 
+                        Object.values(searchResults.static).reduce((sum, matches) => sum + (matches ? matches.length : 0), 0) : 0;
+                    
+                    searchResultsHtml += `
+                        <div class="search-results-item">
+                            <h4>Video: ${videoId}</h4>
+                            <div class="search-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Dynamic Matches:</span>
+                                    <span class="stat-value">${dynamicMatches}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Static Matches:</span>
+                                    <span class="stat-value">${staticMatches}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                task5Content.innerHTML = searchResultsHtml;
+            }
+            
+            // Update Task 6 content
+            const task6Content = document.getElementById('task6-content');
+            if (task6Content && task_results.task6) {
+                let generalizationsHtml = '<h3>Task 6: Generalizations & Insights</h3>';
+                generalizationsHtml += '<p>AI-generated insights including sentiment analysis, topic extraction, and question identification.</p>';
+                
+                for (const [videoId, task6Data] of Object.entries(task_results.task6)) {
+                    const sentiment = task6Data.sentiment || 0.5;
+                    const topics = task6Data.topics || [];
+                    const questions = task6Data.questions || [];
+                    const totalComments = task6Data.total_comments_analyzed || 0;
+                    
+                    const sentimentColor = sentiment >= 0.7 ? '#28a745' : sentiment >= 0.4 ? '#ffc107' : '#dc3545';
+                    
+                    generalizationsHtml += `
+                        <div class="generalization-item">
+                            <h4>Video: ${videoId}</h4>
+                            <p><strong>Comments Analyzed:</strong> ${totalComments}</p>
+                            
+                            <div class="generalization-metrics">
+                                <div class="metric-card">
+                                    <h5>Sentiment Analysis</h5>
+                                    <div class="sentiment-score" style="color: ${sentimentColor}">
+                                        ${sentiment.toFixed(3)}
+                                    </div>
+                                    <p>Overall sentiment (0 = negative, 1 = positive)</p>
+                                </div>
+                                
+                                <div class="metric-card">
+                                    <h5>Top 5 Topics</h5>
+                                    <ul class="topics-list">
+                                        ${topics.slice(0, 5).map(topic => `<li>${topic}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                
+                                <div class="metric-card">
+                                    <h5>Top 5 Questions</h5>
+                                    <ul class="questions-list">
+                                        ${questions.slice(0, 5).map(q => `<li>${q.length > 100 ? q.substring(0, 100) + '...' : q}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                task6Content.innerHTML = generalizationsHtml;
+            }
+        }
+        
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+        
+        function initializePage() {
+            // Re-attach event listeners after page update
+            const fileInput = document.getElementById('datasetFile');
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    currentFile = e.target.files[0];
+                    if (currentFile) {
+                        document.getElementById('successMessage').style.display = 'block';
+                        document.getElementById('successMessage').textContent = `File selected: ${currentFile.name}`;
+                    }
+                });
+            }
+        }
+        
+        function showTask(taskNumber) {
+            // Hide all task panels
+            const panels = document.querySelectorAll('.task-panel');
+            panels.forEach(panel => panel.classList.remove('active'));
+            
+            // Remove active class from all task steps
+            const taskSteps = document.querySelectorAll('.task-step');
+            taskSteps.forEach(step => step.classList.remove('active'));
+            
+            // Show selected task panel
+            const selectedPanel = document.getElementById(`task${taskNumber}-content`);
+            if (selectedPanel) {
+                selectedPanel.classList.add('active');
+            }
+            
+            // Add active class to selected task step
+            const selectedTaskStep = document.getElementById(`task${taskNumber}-step`);
+            if (selectedTaskStep) {
+                selectedTaskStep.classList.add('active');
+                selectedTaskStep.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    </script>
+</body>
+</html>

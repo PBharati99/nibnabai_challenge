@@ -3470,6 +3470,572 @@ def analyze_dataset_enhanced(file_path, use_gpt_search=True, use_all_comments=Fa
         raise
 
 # ==================================
+# Standalone Visualization (No Server Required)
+# ==================================
+def create_standalone_visualization(results=None, task_results=None):
+    """
+    Create a standalone HTML visualization that embeds all data directly
+    No server required - can be opened directly in a browser
+    """
+    # Use real data if provided, otherwise create demo structure
+    if results is None or task_results is None:
+        results = {}
+        task_results = {
+            "task1": {"videos_count": 0, "comments_count": 0, "videos": []},
+            "task2": {},
+            "task3": {"static_specs": STATIC_SPECS},
+            "task4": {"cleaned_rows": 0, "status": "pending"},
+            "task5": {},
+            "task6": {}
+        }
+    
+    # Helper functions for generating content (same as enhanced version)
+    def generateTask1Content(task_results, results):
+        """Generate HTML content for Task 1"""
+        html = ""
+        if 'videos' in task_results['task1'] and task_results['task1']['videos']:
+            for video in task_results['task1']['videos']:
+                video_id = video.get('id', 'Unknown ID')
+                author = video.get('author_id', 'Unknown Author') if video.get('author_id') else 'Unknown Author'
+                content = video.get('content', 'No content available')
+                url = video.get('url', '')
+                
+                html += f"""
+                <div class="video-item">
+                    <div class="video-header">
+                        <h5>Video ID: {video_id}</h5>
+                        <p><strong>Author:</strong> {author}</p>
+                        {f'<p><strong>URL:</strong> <a href="{url}" target="_blank">{url}</a></p>' if url else ''}
+                    </div>
+                    <div class="video-content">
+                        <p><strong>Content:</strong> {content[:200]}{'...' if len(content) > 200 else ''}</p>
+                    </div>
+                </div>
+                """
+        else:
+            html = "<p>No video details available</p>"
+        return html
+    
+    def generateTask2Content(task_results, results):
+        """Generate HTML content for Task 2"""
+        html = ""
+        for video_id, video_data in results.items():
+            if video_id in task_results['task2']:
+                spec = task_results['task2'][video_id]
+                author = video_data.get('video_author', 'Unknown Author')
+                keywords = spec.get('keywords', [])
+                description = spec.get('description', '')
+                
+                html += f"""
+                <div class="video-spec-item">
+                    <h4>Video: {video_id}</h4>
+                    <p><strong>Author:</strong> {author}</p>
+                    <p><strong>Generated Keywords:</strong> {', '.join(keywords)}</p>
+                    <p><strong>Description:</strong> {description}</p>
+                </div>
+                """
+        return html if html else "<p>No dynamic specs available</p>"
+    
+    def generateTask3Content(task_results):
+        """Generate HTML content for Task 3"""
+        if 'static_specs' in task_results['task3']:
+            specs = task_results['task3']['static_specs']
+            html = "<div class='static-specs-list'>"
+            for spec in specs:
+                html += f"""
+                <div class="static-spec-item">
+                    <h4>{spec['name']}</h4>
+                    <p><strong>Keywords:</strong> {', '.join(spec['keywords'])}</p>
+                    <p><strong>Description:</strong> {spec.get('description', 'Universal search criteria')}</p>
+                </div>
+                """
+            html += "</div>"
+            return html
+        return "<p>No static specs available</p>"
+    
+    def generateTask4Content(task_results):
+        """Generate HTML content for Task 4"""
+        cleaned_rows = task_results['task4'].get('cleaned_rows', 0)
+        status = task_results['task4'].get('status', 'completed')
+        
+        return f"""
+        <div class="cleaning-summary">
+            <div class="summary-card">
+                <h4>Data Cleaning Status</h4>
+                <div class="status-badge {status}">{status.upper()}</div>
+            </div>
+            <div class="summary-card">
+                <h4>Cleaned Rows</h4>
+                <div class="summary-number">{cleaned_rows}</div>
+            </div>
+            <div class="cleaning-details">
+                <h4>Cleaning Actions Performed:</h4>
+                <ul>
+                    <li>✅ Removed URLs from content</li>
+                    <li>✅ Removed empty content entries</li>
+                    <li>✅ Stripped whitespace</li>
+                    <li>✅ Handled missing author IDs</li>
+                </ul>
+            </div>
+        </div>
+        """
+    
+    def generateTask5Content(task_results, results):
+        """Generate HTML content for Task 5"""
+        html = ""
+        for video_id, video_data in results.items():
+            if video_id in task_results['task5']:
+                search_results = task_results['task5'][video_id]
+                author = video_data.get('video_author', 'Unknown Author')
+                dynamic_matches = len(search_results.get('dynamic', []))
+                static_matches = sum(len(matches) for matches in search_results.get('static', {}).values())
+                
+                html += f"""
+                <div class="search-results-item">
+                    <h4>Video: {video_id}</h4>
+                    <p><strong>Author:</strong> {author}</p>
+                    <div class="search-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Dynamic Matches:</span>
+                            <span class="stat-value">{dynamic_matches}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Static Matches:</span>
+                            <span class="stat-value">{static_matches}</span>
+                        </div>
+                    </div>
+                </div>
+                """
+        return html if html else "<p>No search results available</p>"
+    
+    def generateTask6Content(task_results, results):
+        """Generate HTML content for Task 6"""
+        html = ""
+        for video_id, video_data in results.items():
+            if video_id in task_results['task6']:
+                task6_data = task_results['task6'][video_id]
+                author = video_data.get('video_author', 'Unknown Author')
+                sentiment = task6_data.get('sentiment', 0.5)
+                topics = task6_data.get('topics', [])
+                questions = task6_data.get('questions', [])
+                total_comments = task6_data.get('total_comments_analyzed', 0)
+                
+                sentiment_color = '#28a745' if sentiment >= 0.7 else '#ffc107' if sentiment >= 0.4 else '#dc3545'
+                
+                html += f"""
+                <div class="generalization-item">
+                    <h4>Video: {video_id}</h4>
+                    <p><strong>Author:</strong> {author}</p>
+                    <p><strong>Comments Analyzed:</strong> {total_comments}</p>
+                    
+                    <div class="generalization-metrics">
+                        <div class="metric-card">
+                            <h5>Sentiment Analysis</h5>
+                            <div class="sentiment-score" style="color: {sentiment_color}">
+                                {sentiment:.3f}
+                            </div>
+                            <p>Overall sentiment (0 = negative, 1 = positive)</p>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h5>Top 5 Topics</h5>
+                            <ul class="topics-list">
+                                {''.join([f'<li>{topic}</li>' for topic in topics[:5]])}
+                            </ul>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h5>Top 5 Questions</h5>
+                            <ul class="questions-list">
+                                {''.join([f'<li>{q[:100]}{"..." if len(q) > 100 else ""}</li>' for q in questions[:5]])}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                """
+        return html if html else "<p>No generalizations available</p>"
+    
+    # Embed the data directly in the HTML
+    embedded_results = json.dumps(results, indent=2)
+    embedded_task_results = json.dumps(task_results, indent=2)
+    
+    html_content = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Comment Analysis - Standalone Results</title>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }}
+        
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }}
+        
+        .header {{
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }}
+        
+        .header h1 {{
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }}
+        
+        .header p {{
+            font-size: 1.2em;
+            opacity: 0.9;
+        }}
+        
+        .content {{
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }}
+        
+        .task-steps {{
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }}
+        
+        .task-step {{
+            flex: 1;
+            min-width: 150px;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }}
+        
+        .task-step:hover {{
+            transform: translateY(-2px);
+            border-color: #2196f3;
+        }}
+        
+        .task-step.active {{
+            border-color: #28a745;
+            background-color: #f8fff9;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+        }}
+        
+        .task-step h4 {{
+            color: #2196f3;
+            margin-bottom: 5px;
+        }}
+        
+        .task-step p {{
+            font-size: 0.9em;
+            color: #666;
+        }}
+        
+        .task-panel {{
+            display: none;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 20px;
+        }}
+        
+        .task-panel.active {{
+            display: block;
+        }}
+        
+        .task-panel h3 {{
+            color: #2196f3;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }}
+        
+        .summary-card {{
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }}
+        
+        .summary-number {{
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2196f3;
+            margin: 10px 0;
+        }}
+        
+        .status-badge {{
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8em;
+        }}
+        
+        .status-badge.completed {{
+            background: #d4edda;
+            color: #155724;
+        }}
+        
+        .video-item, .video-spec-item, .static-spec-item, .search-results-item, .generalization-item {{
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #2196f3;
+        }}
+        
+        .video-header h5, .video-spec-item h4, .static-spec-item h4, .search-results-item h4, .generalization-item h4 {{
+            color: #2196f3;
+            margin-bottom: 10px;
+        }}
+        
+        .search-stats {{
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }}
+        
+        .stat-item {{
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            flex: 1;
+        }}
+        
+        .stat-label {{
+            font-weight: bold;
+            color: #666;
+        }}
+        
+        .stat-value {{
+            font-size: 1.2em;
+            color: #2196f3;
+            font-weight: bold;
+        }}
+        
+        .generalization-metrics {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }}
+        
+        .metric-card {{
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }}
+        
+        .metric-card h5 {{
+            color: #2196f3;
+            margin-bottom: 15px;
+        }}
+        
+        .sentiment-score {{
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }}
+        
+        .topics-list, .questions-list {{
+            list-style: none;
+            text-align: left;
+        }}
+        
+        .topics-list li, .questions-list li {{
+            background: white;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 3px solid #2196f3;
+        }}
+        
+        .cleaning-details ul {{
+            list-style: none;
+            margin-top: 15px;
+        }}
+        
+        .cleaning-details li {{
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 3px solid #28a745;
+        }}
+        
+        .static-specs-list {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }}
+        
+        @media (max-width: 768px) {{
+            .task-steps {{
+                flex-direction: column;
+            }}
+            
+            .search-stats {{
+                flex-direction: column;
+            }}
+            
+            .generalization-metrics {{
+                grid-template-columns: 1fr;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>YouTube Comment Analysis - Standalone Results</h1>
+            <p>Complete analysis results with interactive task navigation</p>
+        </div>
+        
+        <div class="content">
+            <div class="task-steps">
+                <div class="task-step active" onclick="showTask(1)" id="task1-step">
+                    <h4>Task 1</h4>
+                    <p>Data Cleaning</p>
+                </div>
+                <div class="task-step" onclick="showTask(2)" id="task2-step">
+                    <h4>Task 2</h4>
+                    <p>Dynamic Specs</p>
+                </div>
+                <div class="task-step" onclick="showTask(3)" id="task3-step">
+                    <h4>Task 3</h4>
+                    <p>Static Specs</p>
+                </div>
+                <div class="task-step" onclick="showTask(4)" id="task4-step">
+                    <h4>Task 4</h4>
+                    <p>Data Summary</p>
+                </div>
+                <div class="task-step" onclick="showTask(5)" id="task5-step">
+                    <h4>Task 5</h4>
+                    <p>Search Results</p>
+                </div>
+                <div class="task-step" onclick="showTask(6)" id="task6-step">
+                    <h4>Task 6</h4>
+                    <p>Generalizations</p>
+                </div>
+            </div>
+            
+            <div class="task-panel active" id="task1-content">
+                <h3>Task 1: Data Cleaning & Separation</h3>
+                <div class="task-summary">
+                    <div class="summary-card">
+                        <h4>Videos Found</h4>
+                        <div class="summary-number">{task_results['task1']['videos_count']}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Comments Found</h4>
+                        <div class="summary-number">{task_results['task1']['comments_count']}</div>
+                    </div>
+                </div>
+                <div class="task-details">
+                    <h4>Sample Videos:</h4>
+                    {generateTask1Content(task_results, results)}
+                </div>
+            </div>
+            
+            <div class="task-panel" id="task2-content">
+                <h3>Task 2: Dynamic Search Specification Generation</h3>
+                <p>AI-generated search criteria based on video content and author information.</p>
+                {generateTask2Content(task_results, results)}
+            </div>
+            
+            <div class="task-panel" id="task3-content">
+                <h3>Task 3: Static Search Specifications</h3>
+                <p>Pre-defined search criteria for consistent analysis across all videos.</p>
+                {generateTask3Content(task_results)}
+            </div>
+            
+            <div class="task-panel" id="task4-content">
+                <h3>Task 4: Data Cleaning Summary</h3>
+                {generateTask4Content(task_results)}
+            </div>
+            
+            <div class="task-panel" id="task5-content">
+                <h3>Task 5: Comment Search Results</h3>
+                <p>Comments that match the generated search specifications.</p>
+                {generateTask5Content(task_results, results)}
+            </div>
+            
+            <div class="task-panel" id="task6-content">
+                <h3>Task 6: Generalizations & Insights</h3>
+                <p>AI-generated insights including sentiment analysis, topic extraction, and question identification.</p>
+                {generateTask6Content(task_results, results)}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Embedded data (no server required)
+        const embeddedResults = {embedded_results};
+        const embeddedTaskResults = {embedded_task_results};
+        
+        function showTask(taskNumber) {{
+            // Hide all task panels
+            const panels = document.querySelectorAll('.task-panel');
+            panels.forEach(panel => panel.classList.remove('active'));
+            
+            // Remove active class from all task steps
+            const taskSteps = document.querySelectorAll('.task-step');
+            taskSteps.forEach(step => step.classList.remove('active'));
+            
+            // Show selected task panel
+            const selectedPanel = document.getElementById(`task${{taskNumber}}-content`);
+            if (selectedPanel) {{
+                selectedPanel.classList.add('active');
+            }}
+            
+            // Add active class to selected task step
+            const selectedTaskStep = document.getElementById(`task${{taskNumber}}-step`);
+            if (selectedTaskStep) {{
+                selectedTaskStep.classList.add('active');
+                selectedTaskStep.scrollIntoView({{ behavior: 'smooth' }});
+            }}
+        }}
+        
+        // Initialize with Task 1 active
+        document.addEventListener('DOMContentLoaded', function() {{
+            showTask(1);
+        }});
+    </script>
+</body>
+</html>
+"""
+    
+    return html_content
+
+# ==================================
 # Run Example
 # ==================================
 if __name__ == "__main__":
